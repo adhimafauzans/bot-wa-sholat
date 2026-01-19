@@ -248,6 +248,7 @@ async function startBot() {
             /bot on
             /bot off
             /bot today
+            /bot status
             /bot fetch`
         })
       }
@@ -267,6 +268,13 @@ async function startBot() {
             Ashar  : ${jadwalSholat.ashar}
             Maghrib: ${jadwalSholat.maghrib}
             Isya   : ${jadwalSholat.isya}`
+        })
+      }
+
+      if (text === "/bot status") {
+        return sock.sendMessage(from, {
+          text: `📊 *STATUS BOT*\n\n` +
+                `Status: ${groups[from].enabled ? "🟢 ON" : "🔴 OFF"}`
         })
       }
     } catch (err) {
