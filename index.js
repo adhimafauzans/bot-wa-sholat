@@ -49,6 +49,7 @@ function getTodayKey() {
 }
 
 function toMinutes(time) {
+  if (!time) return null
   const [h, m] = time.split(":").map(Number)
   return h * 60 + m
 }
@@ -92,52 +93,62 @@ async function sendToGroups(sock, text) {
 // CHECK & REMINDER
 // ===============================
 async function checkSholat(sock) {
-  if (!jadwalSholat || getTodayKey() !== todayKey) return
+  try {
+    if (!jadwalSholat || Object.keys(jadwalSholat).length === 0) return
 
-  const now = new Date()
-  const nowMin = now.getHours() * 60 + now.getMinutes()
-
-  const times = {
-    imsak: "Imsak",
-    subuh: "Subuh",
-    dzuhur: "Dzuhur",
-    ashar: "Ashar",
-    maghrib: "Maghrib",
-    isya: "Isya"
-  }
-
-  for (const key in times) {
-    const t = toMinutes(jadwalSholat[key])
-
-    // ⏰ 10 menit sebelum
-    if (nowMin === t - 10) {
-      await sendToGroups(
-        sock,
-        `⏰ *10 Menit Menuju ${times[key]}*\n🕰️ ${jadwalSholat[key]}\n✨ Persiapkan diri untuk sholat`
-      )
+    if (getTodayKey() !== todayKey) {
+      await fetchJadwalSholat()
+      return
     }
 
-    // 🕌 tepat waktu
-    if (nowMin === t) {
-      await sendToGroups(
-        sock,
-        `🕌 *WAKTU SHOLAT*\n\n` +
-        `Telah masuk waktu *${name}*\n` +
-        `🙏 Mari kita tunaikan sholat tepat waktu` +
-        `Ke Masjid lebih baik ^_^`
-      )
+    const now = new Date()
+    const nowMin = now.getHours() * 60 + now.getMinutes()
 
-      await sendToGroups(
-        sock,
-        `🤲 *DOA SETELAH ADZAN*\n\n` +
-        `اللَّهُمَّ رَبَّ هَذِهِ الدَّعْوَةِ التَّامَّةِ وَالصَّلَاةِ الْقَائِمَةِ آتِ مُحَمَّدًا الْوَسِيلَةَ وَالْفَضِيلَةَ وَابْعَثْهُ مَقَامًا مَحْمُودًا الَّذِي وَعَدْتَهُ اِنَكَ لاَ تُخْلِفُ اْلمِيْعَاد` +
-        `\n\n Allahumma rabba haadzihid da'watit taammah,\n` +
-        `Wash shalaatil qaa-imah,\n` +
-        `Aati muhammadal wasiilata wal fadhiilah,\n` +
-        `wab'atshu maqaman mahmudanilladzi wa'adtah,\n` +
-        `innaka la tukhliful mi'ad`
-      )
+    const times = {
+      imsak: "Imsak",
+      subuh: "Subuh",
+      dzuhur: "Dzuhur",
+      ashar: "Ashar",
+      maghrib: "Maghrib",
+      isya: "Isya"
     }
+
+    for (const key in times) {
+      const t = toMinutes(jadwalSholat[key])
+      if (t === null) continue
+
+      // ⏰ 10 menit sebelum
+      if (nowMin === t - 10) {
+        await sendToGroups(
+          sock,
+          `⏰ *10 Menit Menuju ${times[key]}*\n🕓 ${jadwalSholat[key]} WIB\n✨ Persiapkan diri untuk sholat`
+        )
+      }
+
+      // 🕌 tepat waktu
+      if (nowMin === t) {
+        await sendToGroups(
+          sock,
+          `🕌 *WAKTU SHOLAT*\n\n` +
+          `Telah masuk waktu *${times[key]}*\n` +
+          `🙏 Mari kita tunaikan sholat tepat waktu` +
+          `Ke Masjid lebih baik ^_^`
+        )
+
+        await sendToGroups(
+          sock,
+          `🤲 *DOA SETELAH ADZAN*\n\n` +
+          `اللَّهُمَّ رَبَّ هَذِهِ الدَّعْوَةِ التَّامَّةِ وَالصَّلَاةِ الْقَائِمَةِ آتِ مُحَمَّدًا الْوَسِيلَةَ وَالْفَضِيلَةَ وَابْعَثْهُ مَقَامًا مَحْمُودًا الَّذِي وَعَدْتَهُ اِنَكَ لاَ تُخْلِفُ اْلمِيْعَاد` +
+          `\n\nAllahumma rabba haadzihid da'watit taammah,\n` +
+          `Wash shalaatil qaa-imah,\n` +
+          `Aati muhammadal wasiilata wal fadhiilah,\n` +
+          `wab'atshu maqaman mahmudanilladzi wa'adtah,\n` +
+          `innaka la tukhliful mi'ad`
+        )
+      }
+    }
+  } catch (err) {
+    logError(err, "CRON")
   }
 }
 
@@ -152,48 +163,33 @@ async function startBot() {
 
   sock.ev.on("creds.update", saveCreds)
 
-  // ===== CONNECTION =====
   sock.ev.on("connection.update", async update => {
     if (update.connection === "open") {
       console.log("🤖 Bot connected")
       await fetchJadwalSholat()
     }
 
-    if (update.connection === "close") {
-      if (
-        update.lastDisconnect?.error?.output?.statusCode !==
-        DisconnectReason.loggedOut
-      ) {
-        startBot()
-      }
+    if (
+      update.connection === "close" &&
+      update.lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut
+    ) {
+      startBot()
     }
   })
 
-  // ===== BOT DITAMBAHKAN KE GRUP =====
+  // ===== GROUP JOIN =====
   sock.ev.on("group-participants.update", async update => {
     try {
       const botId = sock.user.id.split(":")[0] + "@s.whatsapp.net"
 
-      if (
-        update.action === "add" &&
-        update.participants.includes(botId)
-      ) {
+      if (update.action === "add" && update.participants.includes(botId)) {
         groupConfig[update.id] = { active: true }
         saveConfig()
 
         await sock.sendMessage(update.id, {
           text:
-`🤖 *BOT SHOLAT AKTIF*
-Assalamu’alaikum 👋
-
-Saya siap mengingatkan waktu sholat 🕌
-
-📌 *Perintah Utama*
-/bot info → Lihat semua command
-/bot jadwal → Jadwal sholat hari ini
-/bot off → Matikan bot (admin)
-
-Semoga bermanfaat 🤲`
+            `🤖 *BOT SHOLAT AKTIF*
+            /bot info → Lihat command`
         })
       }
     } catch (err) {
@@ -201,7 +197,7 @@ Semoga bermanfaat 🤲`
     }
   })
 
-  // ===== MESSAGE HANDLER =====
+  // ===== MESSAGE =====
   sock.ev.on("messages.upsert", async ({ messages }) => {
     try {
       const msg = messages[0]
@@ -223,7 +219,6 @@ Semoga bermanfaat 🤲`
 
       const admin = await isAdmin(sock, from, sender)
 
-      // ===== COMMAND =====
       if (text === "/bot on" && admin) {
         groupConfig[from].active = true
         saveConfig()
@@ -239,29 +234,29 @@ Semoga bermanfaat 🤲`
       if (text === "/bot info") {
         return sock.sendMessage(from, {
           text:
-            `🤖 *BOT SHOLAT*
-            /bot on → Aktifkan bot
-            /bot off → Matikan bot
-            /bot jadwal → Jadwal sholat hari ini
-            /bot fetch → Update jadwal (admin)`
+            `🤖 *BOT SHOLAT REMINDER*
+            /bot on
+            /bot off
+            /bot today
+            /bot fetch`
         })
       }
 
       if (text === "/bot fetch" && admin) {
         await fetchJadwalSholat()
-        return sock.sendMessage(from, { text: "🔄 Jadwal sholat diperbarui" })
+        return sock.sendMessage(from, { text: "🔄 Jadwal diperbarui" })
       }
 
-      if (text === "/bot jadwal") {
+      if (text === "/bot today" || text === "/bot jadwal") {
         return sock.sendMessage(from, {
           text:
             `🕌 *Jadwal Sholat Hari Ini*
-            🕓 Imsak   : ${jadwalSholat.imsak}
-            🌅 Subuh  : ${jadwalSholat.subuh}
-            ☀️ Dzuhur : ${jadwalSholat.dzuhur}
-            🌇 Ashar  : ${jadwalSholat.ashar}
-            🌆 Maghrib: ${jadwalSholat.maghrib}
-            🌙 Isya   : ${jadwalSholat.isya}`
+            Imsak   : ${jadwalSholat.imsak}
+            Subuh  : ${jadwalSholat.subuh}
+            Dzuhur : ${jadwalSholat.dzuhur}
+            Ashar  : ${jadwalSholat.ashar}
+            Maghrib: ${jadwalSholat.maghrib}
+            Isya   : ${jadwalSholat.isya}`
         })
       }
     } catch (err) {
@@ -269,9 +264,8 @@ Semoga bermanfaat 🤲`
     }
   })
 
-  // ===== CRON =====
-  cron.schedule("0 2 * * *", fetchJadwalSholat) // 02:00 WIB
-  cron.schedule("* * * * *", () => checkSholat(sock)) // tiap menit
+  cron.schedule("0 2 * * *", fetchJadwalSholat)
+  cron.schedule("* * * * *", () => checkSholat(sock))
 }
 
 startBot()
