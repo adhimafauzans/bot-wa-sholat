@@ -187,26 +187,6 @@ async function startBot() {
     }
   })
 
-  // ===== GROUP JOIN =====
-  sock.ev.on("group-participants.update", async update => {
-    try {
-      const botId = sock.user.id.split(":")[0] + "@s.whatsapp.net"
-
-      if (update.action === "add" && update.participants.includes(botId)) {
-        groupConfig[update.id] = { active: true }
-        saveConfig()
-
-        await sock.sendMessage(update.id, {
-          text:
-            `🤖 *BOT SHOLAT AKTIF*
-            /bot info → Lihat command`
-        })
-      }
-    } catch (err) {
-      logError(err, "GROUP_JOIN")
-    }
-  })
-
   // ===== MESSAGE =====
   sock.ev.on("messages.upsert", async ({ messages }) => {
     try {
@@ -223,7 +203,42 @@ async function startBot() {
         ""
 
       if (!groupConfig[from]) {
-        groupConfig[from] = { active: true }
+        groupConfig[from] = {
+          active: true,
+          welcomed: false
+        }
+        saveConfig()
+      }
+
+      if (!groupConfig[from].welcomed) {
+        await sock.sendMessage(from, {
+          text:
+            `🤖 *BOT PENGINGAT SHOLAT AKTIF*
+            Assalamu’alaikum warahmatullahi wabarakatuh 👋
+
+            Saya adalah bot pengingat waktu sholat 🕌
+            Saya akan membantu mengingatkan:
+            ⏰ 10 menit sebelum sholat
+            🕌 Tepat waktu sholat + doa setelah adzan
+
+            ━━━━━━━━━━━━━━
+
+            📌 *PERINTAH BOT*
+            /bot info   → Lihat semua command
+            /bot jadwal → Jadwal sholat hari ini
+            /bot on     → Aktifkan bot (admin)
+            /bot off    → Matikan bot (admin)
+            /bot update  → Update jadwal (admin)
+            /bot info   → Periksa status bot
+
+            ━━━━━━━━━━━━━━
+            📍 *Lokasi*
+            Kota Jakarta (WIB)
+
+            🤲 Semoga bermanfaat dan menambah keberkahan`
+        })
+
+        groupConfig[from].welcomed = true
         saveConfig()
       }
 
@@ -244,16 +259,22 @@ async function startBot() {
       if (text === "/bot info") {
         return sock.sendMessage(from, {
           text:
-            `🤖 *BOT SHOLAT REMINDER*
-            /bot on
-            /bot off
-            /bot today
-            /bot status
-            /bot fetch`
+            `📌 *PERINTAH BOT*
+            /bot info   → Lihat semua command
+            /bot jadwal → Jadwal sholat hari ini
+            /bot on     → Aktifkan bot (admin)
+            /bot off    → Matikan bot (admin)
+            /bot update  → Update jadwal (admin)
+            /bot info   → Periksa status bot
+
+            ━━━━━━━━━━━━━━
+            
+            📍 *Lokasi*
+            Kota Jakarta (WIB)`
         })
       }
 
-      if (text === "/bot fetch" && admin) {
+      if (text === "/bot update" && admin) {
         await fetchJadwalSholat()
         return sock.sendMessage(from, { text: "🔄 Jadwal diperbarui" })
       }
