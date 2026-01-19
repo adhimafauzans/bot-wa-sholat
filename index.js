@@ -198,6 +198,40 @@ async function startBot() {
     }
   })
 
+  sock.ev.on("group-participants.update", async (update) => {
+    try {
+      const botJid =
+        sock.user.id.replace(/:\d+/, "") + "@s.whatsapp.net"
+
+      // ❌ BOT DIKELUARKAN DARI GRUP
+      if (
+        update.action === "remove" &&
+        update.participants.includes(botJid)
+      ) {
+        console.log(`👋 Bot dikeluarkan dari grup ${update.id}`)
+
+        // hapus data grup sepenuhnya
+        if (groupConfig[update.id]) {
+          delete groupConfig[update.id]
+          saveConfig()
+          console.log(`🗑️ Config grup ${update.id} dihapus`)
+        }
+      }
+
+      // ✅ BOT DITAMBAHKAN KE GRUP (optional logging)
+      if (
+        update.action === "add" &&
+        update.participants.includes(botJid)
+      ) {
+        console.log(`➕ Bot ditambahkan ke grup ${update.id}`)
+      }
+
+    } catch (err) {
+      logError(err, "GROUP_PARTICIPANTS")
+    }
+  })
+
+
   // ===== MESSAGE =====
   sock.ev.on("messages.upsert", async ({ messages }) => {
     try {
