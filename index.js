@@ -163,17 +163,27 @@ async function startBot() {
 
   sock.ev.on("creds.update", saveCreds)
 
-  sock.ev.on("connection.update", async update => {
-    if (update.connection === "open") {
+  sock.ev.on("connection.update", async (update) => {
+    const { connection, lastDisconnect, qr } = update
+
+    if (qr) {
+      console.log("📲 SCAN QR CODE DI LOG INI:")
+      console.log(qr)
+    }
+
+    if (connection === "open") {
       console.log("🤖 Bot connected")
       await fetchJadwalSholat()
     }
 
-    if (
-      update.connection === "close" &&
-      update.lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut
-    ) {
-      startBot()
+    if (connection === "close") {
+      if (
+        lastDisconnect?.error?.output?.statusCode !==
+        DisconnectReason.loggedOut
+      ) {
+        console.log("🔄 Reconnecting...")
+        startBot()
+      }
     }
   })
 
