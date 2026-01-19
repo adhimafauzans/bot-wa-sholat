@@ -82,12 +82,23 @@ async function fetchJadwalSholat() {
 // SEND TO ALL ACTIVE GROUPS
 // ===============================
 async function sendToGroups(sock, text) {
-  for (const gid in groupConfig) {
-    if (groupConfig[gid].active) {
+  for (const gid of Object.keys(groupConfig)) {
+    if (!groupConfig[gid]?.active) continue
+
+    try {
       await sock.sendMessage(gid, { text })
+    } catch (err) {
+      logError(err, `SEND_GROUP_${gid}`)
+
+      // OPTIONAL: auto-disable group yang error
+      if (err?.message?.includes("not a participant")) {
+        delete groupConfig[gid]
+        saveConfig()
+      }
     }
   }
 }
+
 
 // ===============================
 // CHECK & REMINDER
