@@ -54,6 +54,8 @@ async function startBot() {
     logger: Pino({ level: "silent" })
   })
 
+  console.log("Server time:", new Date().toString())
+
   sock.ev.on("creds.update", saveCreds)
 
   sock.ev.on("connection.update", ({ qr, connection }) => {
