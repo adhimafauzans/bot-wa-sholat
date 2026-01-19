@@ -21,7 +21,6 @@ const CONFIG_FILE = "./group-config.json"
 let jadwalSholat = {}
 let todayKey = ""
 let groupConfig = {}
-let socketReady = false
 
 // ===============================
 // LOAD / SAVE CONFIG
@@ -185,41 +184,55 @@ async function startBot() {
 
     if (connection === "open") {
       console.log("🤖 Bot connected")
-      socketReady = true
       await fetchJadwalSholat()
     }
 
     if (connection === "close") {
-      
+      if (
+        lastDisconnect?.error?.output?.statusCode !==
+        DisconnectReason.loggedOut
+      ) {
+        console.log("🔄 Reconnecting...")
+        startBot()
+      }
     }
   })
 
   sock.ev.on("group-participants.update", async (update) => {
     try {
-      const botJid =
-        sock.user.id.replace(/:\d+/, "") + "@s.whatsapp.net"
+      const botJid = sock.user.id.replace(/:\d+/, "")
 
+      const isBotParticipant = update.participants.some(p =>
+        p.phoneNumber === botJid || p.id === sock.user.lid
+      )
+
+      // =========================
+      // ➕ BOT DITAMBAHKAN KE GRUP
+      // =========================
+      if (update.action === "add" && isBotParticipant) {
+        console.log(`➕ Bot ditambahkan ke grup ${update.id}`)
+
+        // inisialisasi config grup
+        if (!groupConfig[update.id]) {
+          groupConfig[update.id] = {
+            active: true,
+            welcomed: false
+          }
+          saveConfig()
+        }
+      }
+
+      // =========================
       // ❌ BOT DIKELUARKAN DARI GRUP
-      if (
-        update.action === "remove" &&
-        update.participants.includes(botJid)
-      ) {
+      // =========================
+      if (update.action === "remove" && isBotParticipant) {
         console.log(`👋 Bot dikeluarkan dari grup ${update.id}`)
 
-        // hapus data grup sepenuhnya
         if (groupConfig[update.id]) {
           delete groupConfig[update.id]
           saveConfig()
           console.log(`🗑️ Config grup ${update.id} dihapus`)
         }
-      }
-
-      // ✅ BOT DITAMBAHKAN KE GRUP (optional logging)
-      if (
-        update.action === "add" &&
-        update.participants.includes(botJid)
-      ) {
-        console.log(`➕ Bot ditambahkan ke grup ${update.id}`)
       }
 
     } catch (err) {
@@ -344,12 +357,8 @@ async function startBot() {
     }
   })
 
-  cron.schedule("* * * * *", () => {
-    if (!socketReady) return
-    checkSholat(sock)
-  })
-
   cron.schedule("0 2 * * *", fetchJadwalSholat)
+  cron.schedule("* * * * *", () => checkSholat(sock))
 }
 
 startBot()
