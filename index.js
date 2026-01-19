@@ -21,6 +21,7 @@ const CONFIG_FILE = "./group-config.json"
 let jadwalSholat = {}
 let todayKey = ""
 let groupConfig = {}
+let socketReady = false
 
 // ===============================
 // LOAD / SAVE CONFIG
@@ -184,17 +185,12 @@ async function startBot() {
 
     if (connection === "open") {
       console.log("🤖 Bot connected")
+      socketReady = true
       await fetchJadwalSholat()
     }
 
     if (connection === "close") {
-      if (
-        lastDisconnect?.error?.output?.statusCode !==
-        DisconnectReason.loggedOut
-      ) {
-        console.log("🔄 Reconnecting...")
-        startBot()
-      }
+      
     }
   })
 
@@ -348,8 +344,12 @@ async function startBot() {
     }
   })
 
+  cron.schedule("* * * * *", () => {
+    if (!socketReady) return
+    checkSholat(sock)
+  })
+
   cron.schedule("0 2 * * *", fetchJadwalSholat)
-  cron.schedule("* * * * *", () => checkSholat(sock))
 }
 
 startBot()
