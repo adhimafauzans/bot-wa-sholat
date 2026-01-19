@@ -12,6 +12,7 @@
   "dependencies": {
     "@whiskeysockets/baileys": "^7.0.0-rc.9",
     "axios": "^1.13.2",
+    "fs": "^0.0.1-security",
     "node-cron": "^4.2.1",
     "pino": "^10.2.0",
     "qrcode-terminal": "^0.12.0"
