@@ -229,7 +229,7 @@ async function startBot() {
             /bot on     → Aktifkan bot (admin)
             /bot off    → Matikan bot (admin)
             /bot update  → Update jadwal (admin)
-            /bot info   → Periksa status bot
+            /bot status   → Periksa status bot
 
             ━━━━━━━━━━━━━━
             📍 *Lokasi*
@@ -265,10 +265,10 @@ async function startBot() {
             /bot on     → Aktifkan bot (admin)
             /bot off    → Matikan bot (admin)
             /bot update  → Update jadwal (admin)
-            /bot info   → Periksa status bot
+            /bot status   → Periksa status bot
 
             ━━━━━━━━━━━━━━
-            
+
             📍 *Lokasi*
             Kota Jakarta (WIB)`
         })
@@ -295,7 +295,7 @@ async function startBot() {
       if (text === "/bot status") {
         return sock.sendMessage(from, {
           text: `📊 *STATUS BOT*\n\n` +
-                `Status: ${groups[from].enabled ? "🟢 ON" : "🔴 OFF"}`
+                `Status: ${groupConfig[from].active ? "🟢 ON" : "🔴 OFF"}`
         })
       }
     } catch (err) {
