@@ -209,7 +209,6 @@ async function startBot() {
         DisconnectReason.loggedOut
       ) {
         console.log("🔄 Reconnecting...")
-        startBot()
       }
     }
   })
@@ -394,3 +393,5 @@ Kota Jakarta (WIB)`
   }
 
 }
+
+startBot()
