@@ -140,7 +140,7 @@ async function checkSholat(sock) {
       const targetStr = jadwalSholat[key]
 
       console.log(
-        `Cron Shalat : ${times[key]} | now=${nowStr} | target=${targetStr} | match=${nowMin === t}`
+        `Cron Shalat : ${times[key]} | now=${nowMin}(${nowStr}) | target=${t}(${targetStr}) | match=${nowMin === t}`
       )
 
       // ⏰ 10 menit sebelum
