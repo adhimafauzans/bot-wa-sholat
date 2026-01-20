@@ -61,6 +61,13 @@ async function isAdmin(sock, jid, sender) {
   )
 }
 
+function formatTime(date) {
+  const h = String(date.getHours()).padStart(2, "0")
+  const m = String(date.getMinutes()).padStart(2, "0")
+  return `${h}:${m}`
+}
+
+
 // ===============================
 // FETCH JADWAL SHOLAT
 // ===============================
@@ -114,6 +121,7 @@ async function checkSholat(sock) {
 
     const now = new Date()
     const nowMin = now.getHours() * 60 + now.getMinutes()
+    const nowStr = formatTime(now)
 
     const times = {
       imsak: "Imsak",
@@ -127,7 +135,13 @@ async function checkSholat(sock) {
     for (const key in times) {
       const t = toMinutes(jadwalSholat[key])
       if (t === null) continue
-      console.log("Cron CheckShalat : ", key, nowMin, t, nowMin === t)
+      
+      const targetStr = jadwalSholat[key]
+
+      console.log(
+        `Cron Shalat : ${times[key]} | now=${nowStr} | target=${targetStr} | match=${nowMin === t}`
+      )
+
       // ⏰ 10 menit sebelum
       if (nowMin === t - 10) {
         await sendToGroups(
@@ -266,30 +280,30 @@ async function startBot() {
 
       if (!groupConfig[from].welcomed) {
         await sock.sendMessage(from, {
-          text:
-            `🤖 *BOT PENGINGAT SHOLAT AKTIF*
-            Assalamu’alaikum warahmatullahi wabarakatuh 👋
+          text: `🤖 *BOT PENGINGAT SHOLAT AKTIF*
+Assalamu’alaikum warahmatullahi wabarakatuh 👋
 
-            Saya adalah bot pengingat waktu sholat 🕌
-            Saya akan membantu mengingatkan:
-            ⏰ 10 menit sebelum sholat
-            🕌 Tepat waktu sholat + doa setelah adzan
+Saya adalah bot pengingat waktu sholat 🕌
+Saya akan membantu mengingatkan:
+⏰ 10 menit sebelum sholat
+🕌 Tepat waktu sholat + doa setelah adzan
 
-            ━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━
 
-            📌 *PERINTAH BOT*
-            /bot info   → Lihat semua command
-            /bot jadwal → Jadwal sholat hari ini
-            /bot on     → Aktifkan bot (admin)
-            /bot off    → Matikan bot (admin)
-            /bot update  → Update jadwal (admin)
-            /bot status   → Periksa status bot
+📌 *PERINTAH BOT*
+/bot info    → Lihat semua command
+/bot jadwal  → Jadwal sholat hari ini
+/bot on      → Aktifkan bot (admin)
+/bot off     → Matikan bot (admin)
+/bot update  → Update jadwal (admin)
+/bot status  → Periksa status bot
 
-            ━━━━━━━━━━━━━━
-            📍 *Lokasi*
-            Kota Jakarta (WIB)
+━━━━━━━━━━━━━━
 
-            🤲 Semoga bermanfaat dan menambah keberkahan`
+📍 *Lokasi*
+Kota Jakarta (WIB)
+
+🤲 Semoga bermanfaat dan menambah keberkahan`
         })
 
         groupConfig[from].welcomed = true
@@ -314,17 +328,17 @@ async function startBot() {
         return sock.sendMessage(from, {
           text:
             `📌 *PERINTAH BOT*
-            /bot info   → Lihat semua command
-            /bot jadwal → Jadwal sholat hari ini
-            /bot on     → Aktifkan bot (admin)
-            /bot off    → Matikan bot (admin)
-            /bot update  → Update jadwal (admin)
-            /bot status   → Periksa status bot
+/bot info   → Lihat semua command
+/bot jadwal → Jadwal sholat hari ini
+/bot on     → Aktifkan bot (admin)
+/bot off    → Matikan bot (admin)
+/bot update  → Update jadwal (admin)
+/bot status   → Periksa status bot
 
-            ━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━
 
-            📍 *Lokasi*
-            Kota Jakarta (WIB)`
+📍 *Lokasi*
+Kota Jakarta (WIB)`
         })
       }
 
