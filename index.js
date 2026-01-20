@@ -21,6 +21,7 @@ const CONFIG_FILE = "./group-config.json"
 let jadwalSholat = {}
 let todayKey = ""
 let groupConfig = {}
+let cronStarted = false
 
 // ===============================
 // LOAD / SAVE CONFIG
@@ -199,6 +200,7 @@ async function startBot() {
     if (connection === "open") {
       console.log("🤖 Bot connected")
       await fetchJadwalSholat()
+      startCron(sock)
     }
 
     if (connection === "close") {
@@ -371,8 +373,24 @@ Kota Jakarta (WIB)`
     }
   })
 
-  cron.schedule("0 2 * * *", fetchJadwalSholat)
-  cron.schedule("* * * * *", () => checkSholat(sock))
-}
+  function startCron(sock) {
+    if (cronStarted) {
+      console.log("⛔ Cron sudah berjalan, skip")
+      return
+    }
 
-startBot()
+    cronStarted = true
+    console.log("⏱️ Cron dimulai")
+
+    cron.schedule("0 2 * * *", fetchJadwalSholat, {
+      timezone: "Asia/Jakarta"
+    })
+
+    cron.schedule("* * * * *", () => {
+      checkSholat(sock)
+    }, {
+      timezone: "Asia/Jakarta"
+    })
+  }
+
+}
