@@ -127,7 +127,7 @@ async function checkSholat(sock) {
     for (const key in times) {
       const t = toMinutes(jadwalSholat[key])
       if (t === null) continue
-
+      console.log("Cron CheckShalat : ", key, nowMin, t, nowMin === t)
       // ⏰ 10 menit sebelum
       if (nowMin === t - 10) {
         await sendToGroups(
@@ -142,7 +142,7 @@ async function checkSholat(sock) {
           sock,
           `🕌 *WAKTU SHOLAT*\n\n` +
           `Telah masuk waktu *${times[key]}*\n` +
-          `🙏 Mari kita tunaikan sholat tepat waktu` +
+          `🙏 Mari kita tunaikan sholat tepat waktu\n` +
           `Ke Masjid lebih baik ^_^`
         )
 
