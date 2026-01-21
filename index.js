@@ -46,7 +46,9 @@ function logError(err, tag = "ERROR") {
 }
 
 function getTodayKey() {
-  return new Date().toISOString().split("T")[0]
+  return new Date().toLocaleDateString("en-CA", {
+    timeZone: "Asia/Jakarta"
+  })
 }
 
 function toMinutes(time) {
@@ -133,16 +135,21 @@ async function checkSholat(sock) {
       isya: "Isya"
     }
 
+    let isLoggedTarget = false
+
     for (const key in times) {
       const t = toMinutes(jadwalSholat[key])
       if (t === null) continue
       
       const targetStr = jadwalSholat[key]
 
-      console.log(
-        `Cron Shalat : ${times[key]} | now=${nowMin}(${nowStr}) | target=${t}(${targetStr}) | match=${nowMin === t}`
-      )
-
+      if (!isLoggedTarget && nowMin <= t) {
+        console.log(
+          `Next Target Shalat : ${times[key]} | now=${nowMin}(${nowStr}) | target=${t}(${targetStr}) | match=${nowMin === t}`
+        )
+        isLoggedTarget = true
+      }
+      
       // ⏰ 10 menit sebelum
       if (nowMin === t - 10) {
         await sendToGroups(
